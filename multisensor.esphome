@@ -1,0 +1,71 @@
+esphome:
+  name: esp8266_wemos_d1_mini
+  platform: ESP8266
+  board: d1_mini
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "z9F3bb70sXqhRSxdoEhGV7GaK4lECOh2FQ/izJ+Uj5w="
+
+ota:
+  password: "69fc8132b5690305b10c31a160e8514b"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+i2c:
+  sda: D2
+  scl: D1
+  scan: False
+
+time:
+  - platform: homeassistant
+    id: esptime
+
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: "Multisensor Temperature"
+      id: temp_f
+      filters:
+        - lambda: return x * (9.0/5.0) + 32.0;
+      unit_of_measurement: "°F"
+    humidity:
+      name: "Multisensor Humidity"
+    address: 0x45
+    update_interval: 60s
+
+binary_sensor:
+  - platform: gpio
+    pin: D3
+    name: "Motion Sensor"
+    id: pir_motion
+    device_class: motion
+
+font:
+  - file: "gfonts://Fira Sans"
+    id: tempFont
+    size: 30
+  - file: "gfonts://Roboto"
+    id: timeFont
+    size: 10
+
+display:
+  - platform: ssd1306_i2c
+    model: "SSD1306 64x48"
+    reset_pin: D0
+    address: 0x3c
+    lambda: |-
+      it.printf(0, 0, id(tempFont), TextAlign::TOP_LEFT , "%.1f°", id(temp_f).state);
+      it.strftime(0, 40, id(timeFont), TextAlign::BASELINE_LEFT, "%I:%M  %m-%b", id(esptime).now());
+      if (id(pir_motion).state == 1) {
+        it.print(29, 21, id(tempFont), TextAlign::TOP_LEFT, ".");
+      } else {
+        it.print(29, 21, id(tempFont), TextAlign::TOP_LEFT, " ");
+      }
